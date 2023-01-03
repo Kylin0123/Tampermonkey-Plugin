@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         一键去除在线翻译网站的换行符
 // @namespace    https://greasyfork.org/zh-CN/scripts/390059-%E7%BF%BB%E8%AF%91%E6%8F%92%E4%BB%B6-%E5%8E%BB%E9%99%A4%E6%8D%A2%E8%A1%8C
-// @version      2.3.1
+// @version      2.3.2
 // @description  在各大在线翻译网站的页面上增加了一个“格式化”按钮，用来移除从PDF等复制过来的文本中包含的回车符、换行符、"\n"等，支持DeepL翻译、谷歌翻译、百度翻译、网易有道翻译
 // @author       Kevin Chen
 // @match        https://fanyi.baidu.com/*
@@ -166,7 +166,7 @@ function createButtonByConfig(config) {
 function findConfigByHost(host) {
   console.info('当前网页host:', host)
   switch (host) {
-    case DEEPL_TRANSLATE_CONFIG:
+    case DEEPL_TRANSLATE_CONFIG.host:
       return DEEPL_TRANSLATE_CONFIG
     case GOOGLE_FANYI_CONFIG.host:
       return GOOGLE_FANYI_CONFIG
