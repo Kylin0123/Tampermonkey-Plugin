@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         一键去除在线翻译网站的换行符
 // @namespace    https://greasyfork.org/zh-CN/scripts/390059-%E7%BF%BB%E8%AF%91%E6%8F%92%E4%BB%B6-%E5%8E%BB%E9%99%A4%E6%8D%A2%E8%A1%8C
-// @version      2.3
+// @version      2.3.1
 // @description  在各大在线翻译网站的页面上增加了一个“格式化”按钮，用来移除从PDF等复制过来的文本中包含的回车符、换行符、"\n"等，支持DeepL翻译、谷歌翻译、百度翻译、网易有道翻译
 // @author       Kevin Chen
 // @match        https://fanyi.baidu.com/*
 // @match        https://fanyi.youdao.com/*
-// @match        https://translate.google.cn/*
+// @match        https://translate.google.com.hk/*
 // @match        https://translate.google.com/*
 // @match        https://www.deepl.com/translator
 // @icon         https://translate.google.cn/favicon.ico
@@ -18,23 +18,25 @@
 const FORMAT_CN = '格式化'
 const LOADING_WAIT_TIME = 500
 
+const CONFIGS = [
+
+]
+
 // DeepL翻译CONFIG配置文件
 const DEEPL_TRANSLATE_CONFIG = {
   host: 'www.deepl.com',
   inputAreaSelector: '#dl_translator textarea',
   containerSelector: '#dl_translator > div.lmt__docTrans-tab-container > nav > div',
   translateButtonSelector: '#dl_translator > div.lmt__docTrans-tab-container > nav > button.switchOption--2o-9u.variant_light--1OFSH.active--WFN-c',
-  buttonClass: 'myCustomDeepLButtonClass',
   createButtonHtml: `<button type="button" tabindex="100" class="myCustomDeepLButtonClass"><span style="outline: none;">${FORMAT_CN}</span></button>`,
 }
 
 // 谷歌翻译（中国）CONFIG配置文件
 const GOOGLE_FANYI_CONFIG = {
-  host: 'translate.google.cn',
+  host: 'translate.google.com.hk',
   inputAreaSelector: 'textarea',
   containerSelector: '#yDmH0d > c-wiz nav',
   translateButtonSelector: null,
-  buttonClass: 'myCustomGoogleButtonClass',
   createButtonHtml: `<input class="myCustomGoogleButtonClass" type="button" value="${FORMAT_CN}">`,
 }
 
@@ -44,7 +46,6 @@ const GOOGLE_TRANSLATE_CONFIG = {
   inputAreaSelector: 'textarea',
   containerSelector: '#yDmH0d > c-wiz nav',
   translateButtonSelector: null,
-  buttonClass: 'myCustomGoogleButtonClass',
   createButtonHtml: `<input class="myCustomGoogleButtonClass" type="button" value="${FORMAT_CN}">`,
 }
 
@@ -54,7 +55,6 @@ const BAIDU_FANYI_CONFIG = {
   inputAreaSelector: '#baidu_translate_input',
   containerSelector: '#main-outer > div > div > div.translate-wrap > div.trans-operation-wrapper.clearfix > div.trans-operation.clearfix',
   translateButtonSelector: '#translate-button',
-  buttonClass: 'myCustomBaiduButtonClass',
   createButtonHtml: `<a href="javascript:" class="myCustomBaiduButtonClass">${FORMAT_CN}</a>`,
 }
 
@@ -64,7 +64,6 @@ const YOUDAO_FANYI_CONFIG = {
   inputAreaSelector: '#js_fanyi_input',
   containerSelector: '#app > div.index.os_Windows > div.translate-tab-container > div.tab-header > div.tab-left',
   translateButtonSelector: '#TextTranslate > div.fixedBottomActionBar-border-box > div > div.sourceActionContainer > div > div > div.opt-right.yd-form-container > a',
-  buttonClass: null,
   createButtonHtml: `<div class="tab-item color_text_3" data-v-6e71f92b=""><span class="color_text_1" data-v-6e71f92b="">${FORMAT_CN}</span></div>`,
 }
 
@@ -118,6 +117,7 @@ GM_addStyle(`
 
 // convert string to web element
 function parseDom(html) {
+  console.log("parse dom")
   const e = document.createElement('div')
   e.innerHTML = html
   return e.firstChild
@@ -145,7 +145,9 @@ const format = function (config) {
 
 // create new button by config
 function createButtonByConfig(config) {
+  console.log("开始创建自定义button", config.createButtonHtml)
   const newButton = parseDom(config.createButtonHtml)
+  console.log("创建的button:", newButton)
   if (newButton == null) {
     console.info('创建的新按钮为空')
     return
@@ -162,16 +164,20 @@ function createButtonByConfig(config) {
 }
 
 function findConfigByHost(host) {
-  console.info('当前网页host：', host)
-  if (host == GOOGLE_FANYI_CONFIG.host) {
-  } else if (host == GOOGLE_TRANSLATE_CONFIG.host) {
-    return GOOGLE_TRANSLATE_CONFIG
-  } else if (host == BAIDU_FANYI_CONFIG.host) {
-    return BAIDU_FANYI_CONFIG
-  } else if (host == YOUDAO_FANYI_CONFIG.host) {
-    return YOUDAO_FANYI_CONFIG
-  } else if (host == DEEPL_TRANSLATE_CONFIG.host) {
-    return DEEPL_TRANSLATE_CONFIG
+  console.info('当前网页host:', host)
+  switch (host) {
+    case DEEPL_TRANSLATE_CONFIG:
+      return DEEPL_TRANSLATE_CONFIG
+    case GOOGLE_FANYI_CONFIG.host:
+      return GOOGLE_FANYI_CONFIG
+    case GOOGLE_TRANSLATE_CONFIG.host:
+      return GOOGLE_TRANSLATE_CONFIG
+    case BAIDU_FANYI_CONFIG.host:
+      return BAIDU_FANYI_CONFIG
+    case YOUDAO_FANYI_CONFIG.host:
+      return YOUDAO_FANYI_CONFIG
+    default:
+      return null
   }
 }
 

@@ -8,6 +8,7 @@
 
 - https://www.deepl.com/translator DeepL翻译
 - ~~https://translate.google.cn 谷歌翻译（中国）~~
+- https://translate.google.com.hk 谷歌翻译（香港）
 - https://translate.google.com 谷歌翻译（国际）
 - https://fanyi.baidu.com 百度翻译
 - https://fanyi.youdao.com 网易有道翻译
@@ -26,6 +27,7 @@
 
 # 更新日志
 
+- 2023-01-03：去除失效的translate.google.cn，替换为translate.google.com.hk
 - 2023-01-02：修复deepL失效问题
 - 2021-11-11：之前的网站除了百度基本都失效了，重新适配了网站CSS
 
@@ -33,6 +35,7 @@
 
 - 感谢@奥力给 在评论区 https://greasyfork.org/zh-CN/scripts/390059-%E4%B8%80%E9%94%AE%E5%8E%BB%E9%99%A4%E5%9C%A8%E7%BA%BF%E7%BF%BB%E8%AF%91%E7%BD%91%E7%AB%99%E7%9A%84%E6%8D%A2%E8%A1%8C%E7%AC%A6/discussions/125643 的修复建议
 - 感谢@Guang Cai 在GreasyFork上传的2020年修改版本（作者当时没能及时更新）： https://greasyfork.org/zh-CN/scripts/402321-%E7%BF%BB%E8%AF%91%E6%8F%92%E4%BB%B6-%E5%8E%BB%E9%99%A4%E6%8D%A2%E8%A1%8C-%E6%94%B9
+- 感谢@Roy Chen的用户反馈，支持translate.google.com.hk
 
 # 请作者喝杯咖啡
 
