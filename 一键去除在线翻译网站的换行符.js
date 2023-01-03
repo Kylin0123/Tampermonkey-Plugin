@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         一键去除在线翻译网站的换行符
 // @namespace    https://greasyfork.org/zh-CN/scripts/390059-%E7%BF%BB%E8%AF%91%E6%8F%92%E4%BB%B6-%E5%8E%BB%E9%99%A4%E6%8D%A2%E8%A1%8C
-// @version      2.3.2
+// @version      2.3.3
 // @description  在各大在线翻译网站的页面上增加了一个“格式化”按钮，用来移除从PDF等复制过来的文本中包含的回车符、换行符、"\n"等，支持DeepL翻译、谷歌翻译、百度翻译、网易有道翻译
 // @author       Kevin Chen
 // @match        https://fanyi.baidu.com/*
@@ -17,10 +17,6 @@
 
 const FORMAT_CN = '格式化'
 const LOADING_WAIT_TIME = 500
-
-const CONFIGS = [
-
-]
 
 // DeepL翻译CONFIG配置文件
 const DEEPL_TRANSLATE_CONFIG = {
@@ -66,6 +62,15 @@ const YOUDAO_FANYI_CONFIG = {
   translateButtonSelector: '#TextTranslate > div.fixedBottomActionBar-border-box > div > div.sourceActionContainer > div > div > div.opt-right.yd-form-container > a',
   createButtonHtml: `<div class="tab-item color_text_3" data-v-6e71f92b=""><span class="color_text_1" data-v-6e71f92b="">${FORMAT_CN}</span></div>`,
 }
+
+// 配置文件列表，自定义config不要忘记加在这个列表上
+const CONFIGS = [
+  DEEPL_TRANSLATE_CONFIG,
+  GOOGLE_FANYI_CONFIG,
+  GOOGLE_TRANSLATE_CONFIG,
+  BAIDU_FANYI_CONFIG,
+  YOUDAO_FANYI_CONFIG
+]
 
 // button class styles
 GM_addStyle(`
@@ -165,23 +170,15 @@ function createButtonByConfig(config) {
 
 function findConfigByHost(host) {
   console.info('当前网页host:', host)
-  switch (host) {
-    case DEEPL_TRANSLATE_CONFIG.host:
-      return DEEPL_TRANSLATE_CONFIG
-    case GOOGLE_FANYI_CONFIG.host:
-      return GOOGLE_FANYI_CONFIG
-    case GOOGLE_TRANSLATE_CONFIG.host:
-      return GOOGLE_TRANSLATE_CONFIG
-    case BAIDU_FANYI_CONFIG.host:
-      return BAIDU_FANYI_CONFIG
-    case YOUDAO_FANYI_CONFIG.host:
-      return YOUDAO_FANYI_CONFIG
-    default:
-      return null
+  for (var config of CONFIGS) {
+    if (config.host === host) {
+      return config
+    }
   }
+  return null
 }
 
-;(function () {
+(function () {
   //'use strict';
   console.log('%s毫秒后加载格式化按钮', LOADING_WAIT_TIME)
   window.setTimeout(function () {
