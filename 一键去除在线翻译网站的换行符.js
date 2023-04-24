@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         一键去除在线翻译网站的换行符
 // @namespace    https://greasyfork.org/zh-CN/scripts/390059-%E7%BF%BB%E8%AF%91%E6%8F%92%E4%BB%B6-%E5%8E%BB%E9%99%A4%E6%8D%A2%E8%A1%8C
-// @version      2.3.3
+// @version      2.4
 // @description  在各大在线翻译网站的页面上增加了一个“格式化”按钮，用来移除从PDF等复制过来的文本中包含的回车符、换行符、"\n"等，支持DeepL翻译、谷歌翻译、百度翻译、网易有道翻译
 // @author       Kevin Chen
 // @match        https://fanyi.baidu.com/*
 // @match        https://fanyi.youdao.com/*
-// @match        https://translate.google.com.hk/*
+// @match        https://translate.google.cn/*
 // @match        https://translate.google.com/*
+// @match        https://translate.google.com.hk/*
 // @match        https://www.deepl.com/translator
+// @match        https://fanyi.qq.com/*
+// @match        https://dict.cnki.net/index
 // @icon         https://translate.google.cn/favicon.ico
 // @grant        GM_addStyle
 // @run-at       document-end
@@ -21,18 +24,20 @@ const LOADING_WAIT_TIME = 500
 // DeepL翻译CONFIG配置文件
 const DEEPL_TRANSLATE_CONFIG = {
   host: 'www.deepl.com',
-  inputAreaSelector: '#dl_translator textarea',
+  inputAreaSelector: '#panelTranslateText > div.lmt__sides_container > div.lmt__sides_wrapper > section.lmt__side_container.lmt__side_container--source > div.lmt__textarea_container > div.lmt__inner_textarea_container > d-textarea > div',
   containerSelector: '#dl_translator > div.lmt__docTrans-tab-container > nav > div',
-  translateButtonSelector: '#dl_translator > div.lmt__docTrans-tab-container > nav > button.switchOption--2o-9u.variant_light--1OFSH.active--WFN-c',
+  translateButtonSelector: null,
+  buttonClass: 'myCustomDeepLButtonClass',
   createButtonHtml: `<button type="button" tabindex="100" class="myCustomDeepLButtonClass"><span style="outline: none;">${FORMAT_CN}</span></button>`,
 }
 
-// 谷歌翻译（中国）CONFIG配置文件
+// 谷歌翻译（香港）CONFIG配置文件
 const GOOGLE_FANYI_CONFIG = {
   host: 'translate.google.com.hk',
   inputAreaSelector: 'textarea',
-  containerSelector: '#yDmH0d > c-wiz nav',
+  containerSelector: '#yDmH0d > c-wiz > div > div.WFnNle > c-wiz > div.hgbeOc.EjH7wc > nav',
   translateButtonSelector: null,
+  buttonClass: 'myCustomGoogleButtonClass',
   createButtonHtml: `<input class="myCustomGoogleButtonClass" type="button" value="${FORMAT_CN}">`,
 }
 
@@ -42,6 +47,7 @@ const GOOGLE_TRANSLATE_CONFIG = {
   inputAreaSelector: 'textarea',
   containerSelector: '#yDmH0d > c-wiz nav',
   translateButtonSelector: null,
+  buttonClass: 'myCustomGoogleButtonClass',
   createButtonHtml: `<input class="myCustomGoogleButtonClass" type="button" value="${FORMAT_CN}">`,
 }
 
@@ -51,6 +57,7 @@ const BAIDU_FANYI_CONFIG = {
   inputAreaSelector: '#baidu_translate_input',
   containerSelector: '#main-outer > div > div > div.translate-wrap > div.trans-operation-wrapper.clearfix > div.trans-operation.clearfix',
   translateButtonSelector: '#translate-button',
+  buttonClass: 'myCustomBaiduButtonClass',
   createButtonHtml: `<a href="javascript:" class="myCustomBaiduButtonClass">${FORMAT_CN}</a>`,
 }
 
@@ -60,17 +67,30 @@ const YOUDAO_FANYI_CONFIG = {
   inputAreaSelector: '#js_fanyi_input',
   containerSelector: '#app > div.index.os_Windows > div.translate-tab-container > div.tab-header > div.tab-left',
   translateButtonSelector: '#TextTranslate > div.fixedBottomActionBar-border-box > div > div.sourceActionContainer > div > div > div.opt-right.yd-form-container > a',
+  buttonClass: null,
   createButtonHtml: `<div class="tab-item color_text_3" data-v-6e71f92b=""><span class="color_text_1" data-v-6e71f92b="">${FORMAT_CN}</span></div>`,
 }
 
-// 配置文件列表，自定义config不要忘记加在这个列表上
-const CONFIGS = [
-  DEEPL_TRANSLATE_CONFIG,
-  GOOGLE_FANYI_CONFIG,
-  GOOGLE_TRANSLATE_CONFIG,
-  BAIDU_FANYI_CONFIG,
-  YOUDAO_FANYI_CONFIG
-]
+// 腾讯翻译CONFIG配置文件
+const TENCENT_FANYI_CONFIG = {
+  host: 'fanyi.qq.com',
+  inputAreaSelector: 'body > div.layout-container > div.textpanel > div.textpanel-container.clearfix > div.textpanel-source.active > div.textpanel-source-textarea > textarea',
+  containerSelector: '#language-button-group-translate',
+  translateButtonSelector: '#language-button-group-translate > div',
+  buttonClass: null,
+  createButtonHtml: `<div class="language-translate-button">${FORMAT_CN}</div>`
+}
+
+// CNKI翻译CONFIG配置文件
+const CNKI_FANYI_CONFIG = {
+  host: 'dict.cnki.net',
+  inputTextSelector: '#app > div > section > div > div:nth-child(2) > div.translate > div.trans-left > div.trans-left-con > p > span > pre',
+  inputAreaSelector: '#translateLeft',
+  containerSelector: '#app > div > section > div > div.hanlder > div.hanlder-left > div.hanlder-left-right',
+  translateButtonSelector: '#app > div > section > div > div.hanlder > div.hanlder-left > div.hanlder-left-right > button',
+  buttonClass: null,
+  createButtonHtml: `<button type="button" class="el-button el-button--primary el-button--mini">${FORMAT_CN}</button>`
+}
 
 // button class styles
 GM_addStyle(`
@@ -122,23 +142,54 @@ GM_addStyle(`
 
 // convert string to web element
 function parseDom(html) {
-  console.log("parse dom")
   const e = document.createElement('div')
   e.innerHTML = html
   return e.firstChild
 }
 
-// format code
-const format = function (config) {
-  const inputArea = document.querySelector(config.inputAreaSelector)
-  var txt = inputArea.value != null ? inputArea.value : inputArea.innerHTML
-  for (var i = 0; i < txt.length; i++) {
-    if (txt.indexOf('\n')) txt = txt.replace('\n', ' ')
+// get text context of node
+function getTextContent(node) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent;
   }
+  let text = ' ';
+  for (let i = 0, len = node.childNodes.length; i < len; i++) {
+    text += getTextContent(node.childNodes[i]);
+  }
+  return text;
+}
+
+// simulate textArea input
+function simulateInput(inputBox, value) {
+  const properties = {
+    value: value,
+    writable: true,
+    configurable: true
+  };
+
+  // 为input输入元素添加一个值属性
+  Object.defineProperty(inputBox, 'value', properties);
+
+  // 创建并分配一个新的input事件
+  let inputEvent = new Event("input", { bubbles: true });
+  inputBox.dispatchEvent(inputEvent);
+}
+
+// format code
+function formatByConfig(config) {
+  const inputArea = document.querySelector(config.inputAreaSelector)
+
+  if (config.host == DEEPL_TRANSLATE_CONFIG.host) {
+    let content = format(getTextContent(inputArea)).trim();
+    inputArea.innerHTML = content;
+    return
+  }
+
+  let txt = inputArea.value != null ? inputArea.value : inputArea.innerHTML
   if (inputArea.value != null) {
-    inputArea.value = txt
+    inputArea.value = format(txt)
   } else {
-    inputArea.innerHTML = txt
+    inputArea.innerHTML = format(txt)
   }
 
   // click translate button
@@ -148,17 +199,29 @@ const format = function (config) {
   }
 }
 
+function format (txt) {
+  for (var i = 0; i < txt.length; i++) {
+    if (txt.indexOf('\n')) txt = txt.replace('\n', ' ')
+  }
+  // merge space in txt
+  return txt.replace(/\s+/g, ' ');
+}
+
 // create new button by config
 function createButtonByConfig(config) {
-  console.log("开始创建自定义button", config.createButtonHtml)
   const newButton = parseDom(config.createButtonHtml)
-  console.log("创建的button:", newButton)
   if (newButton == null) {
     console.info('创建的新按钮为空')
     return
   }
   newButton.onclick = () => {
-    format(config)
+    if (config.host == CNKI_FANYI_CONFIG.host) {
+        let inputText = document.querySelector(config.inputTextSelector);
+        let txt = inputText.innerHTML;
+        txt = format(txt);
+        simulateInput(document.querySelector(config.inputAreaSelector), txt);
+    }
+    formatByConfig(config)
   }
   const container = document.querySelector(config.containerSelector)
   if (container != null) {
@@ -169,16 +232,24 @@ function createButtonByConfig(config) {
 }
 
 function findConfigByHost(host) {
-  console.info('当前网页host:', host)
-  for (var config of CONFIGS) {
-    if (config.host === host) {
-      return config
-    }
+  console.info('当前网页host：', host)
+  if (host == GOOGLE_FANYI_CONFIG.host) {
+  } else if (host == GOOGLE_TRANSLATE_CONFIG.host) {
+    return GOOGLE_TRANSLATE_CONFIG
+  } else if (host == BAIDU_FANYI_CONFIG.host) {
+    return BAIDU_FANYI_CONFIG
+  } else if (host == YOUDAO_FANYI_CONFIG.host) {
+    return YOUDAO_FANYI_CONFIG
+  } else if (host == DEEPL_TRANSLATE_CONFIG.host) {
+    return DEEPL_TRANSLATE_CONFIG
+  } else if (host == TENCENT_FANYI_CONFIG.host) {
+    return TENCENT_FANYI_CONFIG
+  } else if (host == CNKI_FANYI_CONFIG.host) {
+    return CNKI_FANYI_CONFIG
   }
-  return null
 }
 
-(function () {
+;(function () {
   //'use strict';
   console.log('%s毫秒后加载格式化按钮', LOADING_WAIT_TIME)
   window.setTimeout(function () {
